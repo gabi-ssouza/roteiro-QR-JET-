@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Roteiro de QR</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+<style>
+:root{--bg:#F1F4EE;--card:#FFFFFF;--ink:#17231A;--mute:#5B6B5F;--line:#D6DDD2;--brand:#14532D;--brandInk:#FFFFFF;--warn:#92400E;--warnBg:#FEF3C7;--bad:#9B1C1C;--badBg:#FDE2E2;--ok:#14532D;--okBg:#DCF3E3;color-scheme:light;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#101712;--card:#19231C;--ink:#E8EFE9;--mute:#9DAFA2;--line:#2A382E;--brand:#6FD08F;--brandInk:#0B1A10;--warn:#F6C453;--warnBg:#3A2E0E;--bad:#FF9B9B;--badBg:#411818;--ok:#8EE0A8;--okBg:#173323;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#101712;--card:#19231C;--ink:#E8EFE9;--mute:#9DAFA2;--line:#2A382E;--brand:#6FD08F;--brandInk:#0B1A10;--warn:#F6C453;--warnBg:#3A2E0E;--bad:#FF9B9B;--badBg:#411818;--ok:#8EE0A8;--okBg:#173323;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 17px/1.45 "Atkinson Hyperlegible",system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+main{max-width:560px;margin:0 auto;padding:16px 14px 40px}
+.top{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+h1{font-size:20px;margin:0}
+.clock{color:var(--mute);font-size:15px}
+.bar{height:10px;border-radius:6px;background:var(--line);margin:10px 0 4px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--brand);width:0;transition:width .3s}
+.prog{color:var(--mute);font-size:15px;margin-bottom:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px}
+.card h2{font-size:24px;line-height:1.2;margin:0 0 4px}
+.addr{color:var(--mute);margin:0 0 12px}
+.qr{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--bg);border-radius:12px;padding:10px 14px;margin-bottom:12px}
+.qr b{font-size:30px;letter-spacing:.04em;font-variant-numeric:tabular-nums}
+.qr span{color:var(--mute);font-size:14px}
+.row{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-top:1px solid var(--line)}
+.row span:first-child{color:var(--mute)}
+.chip{display:inline-block;border-radius:8px;padding:6px 10px;font-size:15px;margin:10px 0 0}
+.chip.ok{background:var(--okBg);color:var(--ok)}.chip.warn{background:var(--warnBg);color:var(--warn)}.chip.bad{background:var(--badBg);color:var(--bad)}
+.btns{display:grid;gap:10px;margin-top:14px}
+button,.btn{font:700 17px/1 inherit;font-family:inherit;border:0;border-radius:12px;padding:16px;min-height:52px;cursor:pointer;text-align:center;text-decoration:none;display:block}
+.pri{background:var(--brand);color:var(--brandInk)}
+.sec{background:transparent;color:var(--ink);border:2px solid var(--line)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+:focus-visible{outline:3px solid var(--brand);outline-offset:2px}
+h3{font-size:17px;margin:22px 0 8px}
+ul{list-style:none;margin:0;padding:0}
+li{display:flex;gap:10px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:6px;cursor:pointer}
+li.cur{border:2px solid var(--brand)}
+li.done{opacity:.55}li.done .nm{text-decoration:line-through}
+.tick{flex:none;width:26px;height:26px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;font-size:15px}
+li.done .tick{background:var(--brand);border-color:var(--brand);color:var(--brandInk)}
+li.skip .tick{border-style:dashed}
+.nm{flex:1;min-width:0}.nm small{display:block;color:var(--mute);font-size:14px}
+.tm{color:var(--mute);font-variant-numeric:tabular-nums;font-size:15px}
+.end{text-align:center;padding:26px 10px}
+.end h2{font-size:26px;margin:0 0 6px}
+.foot{margin-top:18px;display:flex;gap:10px}
+.foot button{flex:1;font-size:15px;padding:12px;min-height:44px}
+@media (prefers-reduced-motion:reduce){.bar i{transition:none}}
+</style>
+</head>
+<body>
+<main>
+  <div class="top"><h1>Troca de QR</h1><span class="clock" id="clock"></span></div>
+  <div class="bar"><i id="fill"></i></div>
+  <div class="prog" id="prog"></div>
+  <div id="cur"></div>
+  <h3>Todos os locais</h3>
+  <ul id="list"></ul>
+  <div class="foot"><button class="sec" onclick="resetAll()">Recomeçar o dia</button></div>
+</main>
+<script>
+var STAY=15, START=13*60+40;
+// n nome, q QR, a endereço, o abre (min), c fecha (min), t deslocamento desde o anterior (min), ll coordenadas, h texto do horário, note aviso
+var S=[
+{n:'Tino Cucina & Bistrô',q:'1068085',a:'R. Gomes de Carvalho, 1178 – Itaim Bibi',o:720,c:900,t:2,ll:'-23.59736,-46.6845121',h:'12h–15h'},
+{n:'Boteco da Praça',q:'1062462',a:'R. Alvorada, 607 – Vila Olímpia',o:480,c:1320,t:3,ll:'-23.6025017,-46.6804545',h:'8h–22h'},
+{n:'Espetaria Pé na Brasa',q:'1072257',a:'R. Rocha, 176 – Bela Vista',o:660,c:1380,t:23,ll:'-23.5577475,-46.6498559',h:'11h–23h',note:'Você viu fecha às 18h; o Google diz 23h.'},
+{n:'Amazônia Casa Brasileira',q:'1072787',a:'R. Rui Barbosa, 218 – Bela Vista',o:720,c:960,t:2,ll:'-23.5574688,-46.6457377',h:'12h–16h (hoje)'},
+{n:'Target Fitclub Marquês de Itu',q:'1069110',a:'R. Marquês de Itu, 181 – Vila Buarque',o:330,c:1380,t:6,ll:'-23.5439883,-46.6460565',h:'5:30–23h'},
+{n:'Boi na Brasa Prime',q:'1072138',a:'R. Marquês de Itu, 188 – Vila Buarque',o:660,c:1380,t:1,ll:'-23.5437169,-46.6461681',h:'11h–23h'},
+{n:'Target Fitclub Arouche',q:'1069114',a:'R. Bento Freitas, 34 – Centro',o:330,c:1410,t:2,ll:'-23.5421283,-46.6456426',h:'5:30–23:30'},
+{n:'Tonnys Bar',q:'1072557',a:'R. Bento Freitas, 47 – República',o:960,c:1500,t:2,ll:'-23.5422686,-46.6453981',h:'16h–1h',note:'Horário que você enviou; o Google não mostrou.'},
+{n:'SIXTY Café Bar',q:'1072377',a:'Av. Vieira de Carvalho, 179 – República',o:480,c:1500,t:2,ll:'-23.5414724,-46.6443149',h:'8h–1h',note:'Horário que você enviou; o Google não mostrou.'},
+{n:'Arco-íris Bar e Restaurante',q:'1069018',a:'Av. Vieira de Carvalho, 10 – República',o:360,c:1380,t:2,ll:'-23.5424042,-46.6429965',h:'6h–23h'},
+{n:'Pampas Grill',q:'1072856',a:'Praça da República, 380 – Centro',o:660,c:1110,t:3,ll:'-23.5427322,-46.6413902',h:'11h–18:30'},
+{n:'Multiplex PlayArte Marabá',q:'1072824',a:'Av. Ipiranga, 757 – República',o:null,c:null,t:2,ll:'-23.5426018,-46.6409035',h:'sem horário cadastrado',note:'Confirme se já está aberto.'},
+{n:'Bar do Baixinho (nº 40)',q:'1069040',a:'R. Dom José de Barros, 40 – República',o:840,c:null,t:3,ll:'-23.5450265,-46.6413664',h:'abre 14h',note:'Horário que você enviou; o Google não mostrou.'},
+{n:'Bar do Baixinho 2 (nº 78)',q:'1072888',a:'R. Dom José de Barros, 78 – República',o:840,c:1440,t:2,ll:'-23.5448382,-46.641136',h:'14h–0h'},
+{n:'Bar Rels (nº 80)',q:'1072365',a:'R. Dom José de Barros, 80 – República',o:780,c:1440,t:2,ll:'-23.544829,-46.6411153',h:'13h–0h'},
+{n:'Texas Bar (nº 90, loja 6)',q:'1073007',a:'R. Dom José de Barros, 90 – República',o:990,c:1380,t:2,ll:null,h:'16:30–23h',note:'Horário que você enviou; o Google não achou este endereço.'}
+];
+var KEY='roteiroQR-v1-', ROUTE='2026-11-10', ref=null, st={d:'',done:{},skip:{},sel:null};
+function today(){var d=new Date();return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate()}
+function cnt(o){return Object.keys(o.done||{}).length+Object.keys(o.skip||{}).length}
+function load(){try{var r=JSON.parse(localStorage.getItem(KEY+ROUTE));if(r)st=r}catch(e){}}
+async function initDb(){try{if(!window.claude)return;var u=await claude.use('user'),db=await claude.use('db');if(!u||!db)return;var id=await u.id();if(!id)return;ref=db.collection('data/users/'+id).doc(ROUTE);var s=await ref.get();if(s.exists){var r=JSON.parse(s.data().st);if(cnt(r)>=cnt(st)){st=r;render()}else save()}}catch(e){}}
+function save(){try{localStorage.setItem(KEY+ROUTE,JSON.stringify(st))}catch(e){}if(ref){try{ref.set({st:JSON.stringify(st)}).catch(function(){})}catch(e){}}}
+function nowMin(){var d=new Date();return d.getHours()*60+d.getMinutes()}
+function fmt(m){m=Math.round(m)%1440;var h=Math.floor(m/60),n=m%60;return h+':'+(n<10?'0':'')+n}
+function proj(){var p=[],t=START;for(var i=0;i<S.length;i++){if(st.done[i]!=null){t=st.done[i];p.push(null)}else if(st.skip[i]){p.push(null)}else{var a=t+S[i].t;p.push(a);t=a+STAY}}return p}
+function firstOpen(){for(var i=0;i<S.length;i++)if(st.done[i]==null&&!st.skip[i])return i;return -1}
+function cur(){return st.sel!=null?st.sel:firstOpen()}
+function status(s,a){if(a==null)return null;
+ if(s.c!=null&&a>s.c)return['bad','Deve fechar antes de você chegar. Pule ou volte depois.'];
+ if(s.c!=null&&a+STAY>s.c)return['warn','Fecha às '+fmt(s.c)+'. Chegue logo.'];
+ if(s.o!=null&&a<s.o)return['warn','Abre só às '+fmt(s.o)+'. Pule e volte, ou espere.'];
+ return['ok','Dentro do horário.']}
+function render(){
+ var p=proj(),c=cur(),nd=0;for(var k in st.done)nd++;
+ document.getElementById('fill').style.width=(nd/S.length*100)+'%';
+ document.getElementById('prog').textContent=nd+' de '+S.length+' feitos'+(Object.keys(st.skip).length?' · '+Object.keys(st.skip).length+' pulados':'');
+ var el=document.getElementById('cur');
+ if(c<0){el.innerHTML='<div class="card end"><h2>Roteiro concluído</h2><p>Todos os locais foram feitos ou pulados.</p></div>'}
+ else{var s=S[c],a=p[c],stt=status(s,a),isDone=st.done[c]!=null;
+  var h='<div class="card"><h2>'+s.n+'</h2><p class="addr">'+s.a+'</p>';
+  h+='<div class="qr"><div><span>QR para trocar</span><br><b>'+s.q+'</b></div><button class="sec" style="min-height:44px;padding:10px 14px" onclick="cp(\''+s.q+'\',this)">Copiar</button></div>';
+  h+='<div class="row"><span>Horário</span><span>'+s.h+'</span></div>';
+  if(a!=null)h+='<div class="row"><span>Chegada prevista</span><span><b>'+fmt(a)+'</b></span></div>';
+  if(isDone)h+='<div class="row"><span>Concluído às</span><span><b>'+fmt(st.done[c])+'</b></span></div>';
+  if(stt)h+='<div class="chip '+stt[0]+'">'+stt[1]+'</div>';
+  if(s.note)h+='<div class="addr" style="margin:8px 0 0;font-size:15px">'+s.note+'</div>';
+  h+='<div class="btns">';
+  if(s.ll)h+='<a class="btn sec" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination='+s.ll+'&travelmode=bicycling">Abrir rota no Maps</a>';
+  else h+='<a class="btn sec" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(s.a+', São Paulo')+'&travelmode=bicycling">Abrir rota no Maps</a>';
+  if(isDone)h+='<button class="sec" onclick="undo('+c+')">Desfazer</button>';
+  else h+='<div class="two"><button class="pri" onclick="done('+c+')">Feito</button><button class="sec" onclick="skip('+c+')">Pular</button></div>';
+  h+='</div></div>';el.innerHTML=h}
+ var L='';for(var i=0;i<S.length;i++){var cl=(i===c?'cur ':'')+(st.done[i]!=null?'done ':'')+(st.skip[i]?'skip':'');
+  var tm=st.done[i]!=null?fmt(st.done[i]):(st.skip[i]?'pulado':fmt(p[i]));
+  L+='<li class="'+cl+'" onclick="pick('+i+')"><span class="tick">'+(st.done[i]!=null?'✓':(st.skip[i]?'–':''))+'</span><span class="nm">'+S[i].n+'<small>QR '+S[i].q+'</small></span><span class="tm">'+tm+'</span></li>'}
+ document.getElementById('list').innerHTML=L}
+function done(i){st.done[i]=nowMin();delete st.skip[i];st.sel=null;save();render();window.scrollTo(0,0)}
+function skip(i){st.skip[i]=1;st.sel=null;save();render();window.scrollTo(0,0)}
+function undo(i){delete st.done[i];delete st.skip[i];st.sel=null;save();render()}
+function pick(i){st.sel=i;save();render();window.scrollTo(0,0)}
+function resetAll(){if(confirm('Apagar o progresso de hoje?')){st={d:today(),done:{},skip:{},sel:null};save();render()}}
+function cp(t,b){try{navigator.clipboard.writeText(t);b.textContent='Copiado';setTimeout(function(){b.textContent='Copiar'},1500)}catch(e){}}
+function tick(){document.getElementById('clock').textContent='Agora '+fmt(nowMin())}
+load();render();tick();setInterval(tick,30000);initDb();
+</script>
+</body>
+</html>
